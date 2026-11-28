@@ -1,4 +1,15 @@
-"""Antecipacao usando valor presente com capitalizacao composta."""
+"""
+FormaFlux - Valor Presente Composto.
+
+Modulo responsavel pelo calculo da antecipacao de recebiveis
+com base no valor presente sob capitalizacao composta.
+
+Aplica heranca e polimorfismo, especializando o metodo de
+calculo da superclasse Antecipacao e reutilizando as regras
+financeiras compartilhadas.
+
+Formula: VP = V / (1 + i) ** n
+"""
 
 from decimal import Decimal
 

@@ -1,4 +1,13 @@
-"""Base abstrata para os modelos de antecipacao financeira."""
+"""
+FormaFlux - Modelo Abstrato de Antecipacao Financeira.
+
+Modulo responsavel pela definicao da superclasse Antecipacao,
+que estabelece o comportamento comum das modalidades de calculo.
+
+Aplica abstracao e encapsulamento, centralizando a validacao
+dos parametros financeiros, a deducao da tarifa fixa,
+o arredondamento e a validacao do valor liquido.
+"""
 
 from abc import ABC, abstractmethod
 from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
@@ -21,6 +30,11 @@ class Antecipacao(ABC):
         if not tarifa.is_finite() or tarifa < 0:
             raise ValueError("A tarifa fixa nao pode ser negativa.")
 
+        # Valida a precisao monetaria da tarifa.
+        if tarifa.as_tuple().exponent < -2:
+            raise ValueError(
+                "A tarifa fixa deve ter no maximo duas casas decimais.")
+
         self._taxa_mensal = taxa
         self._tarifa_fixa = tarifa
 
@@ -32,11 +46,25 @@ class Antecipacao(ABC):
     def tarifa_fixa(self) -> Decimal:
         return self._tarifa_fixa
 
+    
     def _finalizar_calculo(self, valor_presente: Decimal) -> Decimal:
         liquido = valor_presente - self._tarifa_fixa
-        if not liquido.is_finite() or liquido <= 0:
-            raise ValueError("Antecipacao inviavel: desconto e tarifa consomem o valor da parcela.")
-        return liquido.quantize(CENTAVO, rounding=ROUND_HALF_UP)
+
+        if not liquido.is_finite():
+            raise ValueError("Valor liquido invalido.")
+
+        # Arredonda o valor antes de validar a viabilidade.
+        liquido = liquido.quantize(
+            CENTAVO, rounding=ROUND_HALF_UP
+        )
+
+        if liquido <= 0:
+            raise ValueError(
+                "Antecipacao inviavel: desconto e tarifa consomem o valor da parcela."
+            )
+
+        return liquido
+
 
     @abstractmethod
     def calcular_valor_liquido(self, parcela: Parcela) -> Decimal:

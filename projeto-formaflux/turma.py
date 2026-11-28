@@ -1,4 +1,13 @@
-"""Cadastro da turma e vinculo com suas parcelas a receber."""
+"""
+FormaFlux - Gerenciamento de Turma.
+
+Modulo responsavel pela representacao da turma de formatura
+e pelo gerenciamento de suas parcelas a receber.
+
+Aplica encapsulamento e agregacao de objetos, permitindo
+o cadastro, a busca e a listagem de parcelas, com controle
+de duplicidade dos identificadores.
+"""
 
 from parcela import Parcela
 

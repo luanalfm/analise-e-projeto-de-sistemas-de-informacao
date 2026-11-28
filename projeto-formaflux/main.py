@@ -1,14 +1,32 @@
-"""FormaFlux: simulador de antecipacao de recebiveis para formaturas.
+# Universidade Federal Rural de Pernambuco (UFRPE)
 
-Interface via terminal (CLI), com dados ficticios mantidos apenas em memoria.
+# UNIDADE ACADEMICA DE EDUCACAO A DISTANCIA E TECNOLOGIA (UAEADTec)
+# BACHARELADO EM SISTEMAS DE INFORMACA (BSI)
+# Disciplina: Analise e Projeto de Sistemas de Informacao
+# Docente: Jose Paulo Lima
+# Discente: Isabelle Karoline de Oliveira Barbosa e Luana Luzia Ferreira Medeiros
+# Polo Jaboatao dos Guararapes - Semestre 2026.2 - Modulo 2
+# 2ª Verificação de Aprendizagem 
+
+"""
+FormaFlux - Interface via Terminal (CLI).
+
+Modulo principal de execucao, responsavel pelo menu interativo
+e pelo gerenciamento do fluxo de operacoes do sistema.
+
+Integra as classes de dominio para cadastro, consulta, simulacao
+e comparacao de antecipacoes de recebiveis.
+
+Os dados sao mantidos em memoria durante a sessao de uso.
 """
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 
 from antecipacao_composta import AntecipacaoComposta
 from antecipacao_simples import AntecipacaoSimples
 from parcela import Parcela
 from turma import Turma
+from validacao import converter_decimal
 
 
 def moeda(valor: Decimal) -> str:
@@ -17,17 +35,7 @@ def moeda(valor: Decimal) -> str:
 
 
 def ler_decimal(mensagem: str) -> Decimal:
-    entrada = input(mensagem).strip().replace("R$", "").strip()
-    if "," in entrada:
-        entrada = entrada.replace(".", "").replace(",", ".")
-    try:
-        numero = Decimal(entrada)
-        if not numero.is_finite():
-            raise InvalidOperation
-        return numero
-    except InvalidOperation:
-        raise ValueError("Digite um numero valido (ex.: 1000,00).") from None
-
+    return converter_decimal(input(mensagem))
 
 def ler_inteiro(mensagem: str) -> int:
     try:
@@ -64,17 +72,24 @@ def ler_parametros() -> tuple[Decimal, Decimal]:
     return taxa_decimal, tarifa
 
 
+
 def exibir_resultado(nome: str, parcela: Parcela, valor_liquido: Decimal) -> None:
     custo_total = parcela.valor_nominal - valor_liquido
-    print(f"\n{nome}")
+
+    exibir_titulo(nome)
+
+    print(f"  Parcela:       {parcela.id_parcela}")
+    print(f"  Prazo:         {parcela.prazo_meses} mes(es)")
+    print("-" * 48)
     print(f"  Valor nominal: {moeda(parcela.valor_nominal)}")
     print(f"  Valor liquido: {moeda(valor_liquido)}")
     print(f"  Custo total:   {moeda(custo_total)}")
+    print("-" * 48)
 
 
 def comparar_modalidades(parcela: Parcela, taxa: Decimal, tarifa: Decimal) -> None:
     """CSU05: pode ser acessado pelo menu ou apos uma simulacao."""
-    print("\n=== COMPARACAO DAS MODALIDADES ===")
+    exibir_titulo("Resultado da comparacao")
     modalidades = [
         ("Desconto comercial simples", AntecipacaoSimples(taxa, tarifa)),
         ("Valor presente composto", AntecipacaoComposta(taxa, tarifa)),
@@ -83,18 +98,31 @@ def comparar_modalidades(parcela: Parcela, taxa: Decimal, tarifa: Decimal) -> No
         try:
             valor = modalidade.calcular_valor_liquido(parcela)
             exibir_resultado(nome, parcela, valor)
-        except ValueError as erro:
+        except (ValueError, ArithmeticError) as erro:
             print(f"\n{nome}: nao foi possivel calcular. Motivo: {erro}")
 
 
+def exibir_titulo(titulo: str) -> None:
+    """Padroniza os titulos das operacoes no terminal."""
+    print("\n" + "-" * 48)
+    print(titulo.upper().center(48))
+    print("-" * 48)
+
 def mostrar_menu() -> None:
-    print("\n=== FORMAFLUX ===")
-    print("1 - Cadastrar turma")
-    print("2 - Cadastrar parcela")
-    print("3 - Consultar parcelas")
-    print("4 - Simular antecipacao")
-    print("5 - Comparar modalidades")
-    print("0 - Sair")
+    print("\n" + "=" * 48)
+    print("FORMAFLUX".center(48))
+    print("Simulador de Antecipacao Financeira".center(48))
+    print("=" * 48)
+
+    print("  [1] Cadastrar turma")
+    print("  [2] Cadastrar parcela")
+    print("  [3] Consultar parcelas")
+    print("  [4] Simular antecipacao")
+    print("  [5] Comparar modalidades")
+    print("-" * 48)
+    print("  [0] Sair do sistema")
+
+    print("=" * 48)
 
 
 def executar() -> None:
@@ -103,10 +131,12 @@ def executar() -> None:
         mostrar_menu()
         opcao = input("Escolha: ").strip()
         if opcao == "0":
-            print("Encerrando o FormaFlux. Cadastros nao sao salvos.")
+            print("\n[INFO] Encerrando o FormaFlux. Cadastros nao sao salvos.")
             break
         try:
             if opcao == "1":
+                exibir_titulo("Cadastro de turma")
+
                 if turma is not None:
                     confirmar = input("Substituir turma e perder parcelas atuais? (s/n): ")
                     if confirmar.strip().lower() != "s":
@@ -114,21 +144,25 @@ def executar() -> None:
                 nome = input("Nome da turma: ")
                 ano = ler_inteiro("Ano da formatura: ")
                 turma = Turma(nome, ano)
-                print("Turma cadastrada com sucesso.")
+                print("\n[SUCESSO] Turma cadastrada com sucesso.")
 
             elif opcao == "2":
+                exibir_titulo("Cadastro de parcela")
+
                 turma_atual = exigir_turma(turma)
                 identificador = input("Identificador (ex.: P01): ")
                 valor = ler_decimal("Valor nominal (R$): ")
                 meses = ler_inteiro("Prazo em meses: ")
                 turma_atual.adicionar_parcela(Parcela(identificador, valor, meses))
-                print("Parcela cadastrada com sucesso.")
+                print("\n[SUCESSO] Parcela cadastrada com sucesso.")
 
             elif opcao == "3":
+                exibir_titulo("Consulta de parcelas")
+
                 turma_atual = exigir_turma(turma)
                 parcelas = turma_atual.listar_parcelas()
                 if not parcelas:
-                    print("Nenhuma parcela cadastrada.")
+                    print("\n[INFO] Nenhuma parcela cadastrada.")
                 else:
                     print(f"\nTurma: {turma_atual.nome} ({turma_atual.ano})")
                     for parcela in parcelas:
@@ -136,6 +170,8 @@ def executar() -> None:
                               f"prazo: {parcela.prazo_meses} mes(es)")
 
             elif opcao == "4":
+                exibir_titulo("Simulacao de antecipacao")
+
                 parcela = escolher_parcela(exigir_turma(turma))
                 taxa, tarifa = ler_parametros()
                 print("\n1 - Desconto comercial simples")
@@ -149,7 +185,7 @@ def executar() -> None:
                     nome = "Valor presente composto"
                 else:
                     raise ValueError("Modalidade inexistente.")
-                valor = modelo.calcular_valor_liquido(parcela)
+                valor = modelo.calcular_valor_liquido(parcela)                
                 exibir_resultado(nome, parcela, valor)
                 # CSU05 pode estender CSU04 se o usuario quiser comparar.
                 comparar = input("Deseja comparar as duas modalidades? (s/n): ")
@@ -157,15 +193,17 @@ def executar() -> None:
                     comparar_modalidades(parcela, taxa, tarifa)
 
             elif opcao == "5":
+                exibir_titulo("Comparacao de modalidades")
+
                 parcela = escolher_parcela(exigir_turma(turma))
                 taxa, tarifa = ler_parametros()
                 comparar_modalidades(parcela, taxa, tarifa)
 
             else:
-                print("Opcao desconhecida. Tente novamente.")
-        except ValueError as erro:
-            print(f"Atencao: {erro}")
-
+                print("\n[ATENCAO] Opcao desconhecida. Tente novamente.")
+        except (ValueError, ArithmeticError) as erro:
+            print(f"\n[ERRO] {erro}")
+        input("\nPressione ENTER para retornar ao menu...")
 
 if __name__ == "__main__":
     try:

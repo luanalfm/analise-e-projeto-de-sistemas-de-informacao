@@ -1,4 +1,13 @@
-"""Representa um recebivel previsto da turma de formatura."""
+"""
+FormaFlux - Representacao de Parcela.
+
+Modulo responsavel pela representacao dos recebiveis da turma,
+considerando identificador, valor nominal e prazo em meses.
+
+Aplica encapsulamento por meio de atributos protegidos,
+propriedades e setters, preservando a integridade dos dados
+e o cumprimento das regras de negocio.
+"""
 
 from decimal import Decimal, InvalidOperation
 
@@ -26,10 +35,21 @@ class Parcela:
     def valor_nominal(self, valor: Decimal):
         try:
             valor_decimal = Decimal(str(valor))
+
             if not valor_decimal.is_finite() or valor_decimal <= 0:
                 raise ValueError
+
         except (InvalidOperation, ValueError):
-            raise ValueError("O valor nominal deve ser maior que zero.") from None
+            raise ValueError(
+                "O valor nominal deve ser maior que zero."
+        ) from None
+
+        # Valida a quantidade de casas decimais.
+        if valor_decimal.as_tuple().exponent < -2:
+            raise ValueError(
+                "O valor nominal deve ter no maximo duas casas decimais."
+        )
+
         self._valor_nominal = valor_decimal
 
     @property

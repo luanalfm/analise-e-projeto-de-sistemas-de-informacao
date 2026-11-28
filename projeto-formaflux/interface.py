@@ -1,10 +1,17 @@
-"""FormaFlux - interface desktop complementar em CustomTkinter.
+"""
+FormaFlux - Interface Grafica do Usuario (GUI).
 
-Este arquivo utiliza as classes do projeto, sem duplicar a logica financeira.
-O menu CLI exigido na 2a VA continua disponivel em main.py.
+Modulo desenvolvido com CustomTkinter, responsavel pela interacao
+visual com as funcionalidades de cadastro, consulta, simulacao
+e comparacao de antecipacoes.
+
+Reutiliza as classes de dominio do sistema, mantendo a separacao
+entre a interface grafica e a logica de negocio.
+
+Complementa a interface via terminal (CLI), disponivel em main.py.
 """
 
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from tkinter import BooleanVar, messagebox
 
 import customtkinter as ctk
@@ -13,7 +20,7 @@ from turma import Turma
 from parcela import Parcela
 from antecipacao_simples import AntecipacaoSimples
 from antecipacao_composta import AntecipacaoComposta
-
+from validacao import converter_decimal
 
 # Identidade visual. Cada par de cores representa (tema claro, tema escuro).
 FUNDO = ("#F3F6F9", "#101923")
@@ -45,17 +52,7 @@ F_LOGO = ("Segoe UI", 28, "bold")
 
 
 def valor_decimal(texto):
-    """Aceita 1000,50 ou 1000.50, sem converter valores financeiros em float."""
-    texto = texto.strip().replace("R$", "").replace(" ", "")
-    if "," in texto:
-        texto = texto.replace(".", "").replace(",", ".")
-    try:
-        numero = Decimal(texto)
-    except (InvalidOperation, ValueError):
-        raise ValueError("Informe um valor numérico válido.") from None
-    if not numero.is_finite():
-        raise ValueError("O valor precisa ser um número finito.")
-    return numero
+   return converter_decimal(texto)
 
 
 def valor_monetario(numero):
@@ -483,7 +480,7 @@ class FormaFluxApp(ctk.CTk):
                 try:
                     liquido = modelo.calcular_valor_liquido(p)
                     resultados.append((nome, liquido, p.valor_nominal - liquido))
-                except ValueError as exc:
+                except (ValueError, ArithmeticError) as exc:
                     falhas.append((nome, str(exc)))
             self._limpar(self.comp_resultado)
             area = self._cartao(self.comp_resultado)

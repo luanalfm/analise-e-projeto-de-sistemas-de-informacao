@@ -1,4 +1,13 @@
-"""Testes simples do prototipo para ajudar a dupla na homologacao."""
+"""
+FormaFlux - Testes Unitarios e de Regressao.
+
+Modulo responsavel pela verificacao automatizada das regras
+de negocio, dos calculos financeiros e dos comportamentos
+das classes do sistema, utilizando a biblioteca unittest.
+
+Contempla cenarios validos, invalidos e valores limite,
+contribuindo para a qualidade e a confiabilidade do software.
+"""
 
 import unittest
 from decimal import Decimal
@@ -8,6 +17,7 @@ from parcela import Parcela
 from antecipacao import Antecipacao
 from antecipacao_simples import AntecipacaoSimples
 from antecipacao_composta import AntecipacaoComposta
+from validacao import converter_decimal
 
 
 class TestesFormaFlux(unittest.TestCase):
@@ -56,7 +66,53 @@ class TestesFormaFlux(unittest.TestCase):
     def test_nao_instanciar_classe_abstrata(self):
         with self.assertRaises(TypeError):
             Antecipacao(Decimal("0.02"), Decimal("10"))
+    
+    def test_liquido_zero_apos_arredondamento(self):
+        parcela = Parcela("P02", Decimal("0.01"), 1)
+        modelo = AntecipacaoSimples(
+            Decimal("0.60"), Decimal("0"))
 
+        with self.assertRaises(ValueError):
+            modelo.calcular_valor_liquido(parcela)
+
+    def test_precisao_valor_nominal(self):
+        with self.assertRaises(ValueError):
+            Parcela("P02", Decimal("1000.005"), 3)
+
+    def test_precisao_tarifa_fixa(self):
+        with self.assertRaises(ValueError):
+            AntecipacaoSimples(
+                Decimal("0.02"), Decimal("10.001"))
+
+    def test_limite_desconto_simples(self):
+        parcela = Parcela("P02", Decimal("1000"), 4)
+        modelo = AntecipacaoSimples(
+            Decimal("0.25"), Decimal("0"))
+
+        with self.assertRaises(ValueError):
+            modelo.calcular_valor_liquido(parcela)
+
+    def test_formatos_decimais_validos(self):
+        self.assertEqual(
+            converter_decimal("1000,50"),
+            Decimal("1000.50") )
+        self.assertEqual(
+            converter_decimal("1000.50"),
+            Decimal("1000.50"))
+
+    def test_formatos_decimais_invalidos(self):
+        entradas = [
+            "12.34,56",
+            "1.000,50",
+            "1e30",
+            "NaN",
+            "Infinity",
+            "abc"]
+
+        for entrada in entradas:
+            with self.subTest(entrada=entrada):
+                with self.assertRaises(ValueError):
+                    converter_decimal(entrada)
 
 if __name__ == "__main__":
     unittest.main()
